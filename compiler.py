@@ -15,7 +15,7 @@ with open(args[1],"r") as f:
 code.replace("\n","")
 
 token=tokenize(code)
-node=expr()
+node=start()
 
 with open("output.txt","w") as f:
     f.write(".intel_syntax noprefix\n")

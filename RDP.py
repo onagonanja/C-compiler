@@ -8,6 +8,12 @@ class NodeKind(Enum):
     MUL=3
     DIV=4
     NUM=5
+    LT=6 #<
+    RT=7 #>
+    LET=8 #<=
+    RET=9 #>=
+    EQ=10 #==
+    NEQ=11 #!=
 
 #ノードクラス
 class Node():
@@ -17,8 +23,39 @@ class Node():
         self.right=right
         self.val=val
 
-#expr = mul ("+" mul | "-" mul)*
-def expr():
+#start=equal
+def start():
+    node=equal()
+    return node
+
+#equal = (relate "=="|relate "!=")
+def equal():
+    node=relate()
+    while True:
+        if consume("=="):
+            node=Node(NodeKind.EQ,node,relate())
+        elif consume("!="):
+            node=Node(NodeKind.NEQ,node,relate())
+        else:
+            return node
+
+#relate = add ("<" add | ">" add | "<=" add | ">=" add)
+def relate():
+    node=add()
+    while True:
+        if consume("<"):
+            node=Node(NodeKind.LT,node,add())
+        elif consume(">"):
+            node=Node(NodeKind.RT,node,add())
+        elif consume("<="):
+            node=Node(NodeKind.LET,node,add())
+        elif consume(">="):
+            node=Node(NodeKind.RET,node,add())
+        else:
+            return node
+
+#add = mul ("+" mul | "-" mul)*
+def add():
     node=mul()
     while True:
         if consume("+"):
@@ -28,24 +65,31 @@ def expr():
         else:
             return node
 
-#mul = primary ("*" primary | "/" primary)*
+#mul = unary ("*" unary | "/" unary)*
 def mul():
-    node=primary()
+    node=unary()
     while True:
         if consume("*"):
-           node=Node(NodeKind.MUL,node,mul())
+            node=Node(NodeKind.MUL,node,unary())
         elif consume("/"):
-            node=Node(NodeKind.DIV,node,mul())
+            node=Node(NodeKind.DIV,node,unary())
         else:
             return node
 
-#primary = num | "(" expr ")"
+#unary = ("+" | "-")? primary
+def unary():
+    if consume('+'):
+        return primary()
+    if consume("-"):
+        return Node(NodeKind.SUB,Node(kind=NodeKind.NUM,val=0),primary())
+    return primary()
+
+#primary = num | "(" start ")"
 def primary():
     if consume('('):
-        node=expr()
+        node=start()
         expect(')')
         return node
 
     node=Node(kind=NodeKind.NUM,val=expectNum())
     return node
-    

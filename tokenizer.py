@@ -22,7 +22,7 @@ token=Token()
 def consume(symbol):
     global token
 
-    if token.kind !=TokenKind.RESERVED or token.str[0]!=symbol:
+    if token.kind !=TokenKind.RESERVED or token.str!=symbol:
         return False
 
     token=token.next
@@ -62,9 +62,28 @@ def tokenize(str):
     global token
     head=Token()
     cur=head #現在注目しているトークン
+    flag=False
 
-    for p in str:
+    for i, p in enumerate(str):
+        if flag==True:
+            flag=False
+            continue
+
         if(p==" "):
+            continue
+
+        if i<=len(str)-2:
+            if p=="=" and str[i+1]=="=" or p=="!" and p=="=":
+                cur=NewToken(TokenKind.RESERVED,cur,p+str[i+1])
+                flag=True
+                continue
+            if p=="<" and str[i+1]=="=" or p==">" and p=="=":
+                cur=NewToken(TokenKind.RESERVED,cur,p+str[i+1])
+                flag=True
+                continue
+        
+        if p=="<" or p==">":
+            cur=NewToken(TokenKind.RESERVED,cur,p)
             continue
 
         if p=="+" or p=="-" or p=="*" or p=="/":
@@ -79,8 +98,6 @@ def tokenize(str):
             cur=NewToken(TokenKind.NUM,cur,p)
             cur.val=int(p)
             continue
-
-        print(p)
 
         error(3)
     eof=NewToken(TokenKind.EOF,cur,"EOF")
