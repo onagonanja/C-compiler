@@ -73,11 +73,11 @@ def tokenize(str):
             continue
 
         if i<=len(str)-2:
-            if p=="=" and str[i+1]=="=" or p=="!" and p=="=":
+            if (p=="=" and str[i+1]=="=") or (p=="!" and str[i+1]=="="):
                 cur=NewToken(TokenKind.RESERVED,cur,p+str[i+1])
                 flag=True
                 continue
-            if p=="<" and str[i+1]=="=" or p==">" and p=="=":
+            if (p=="<" and str[i+1]=="=") or (p==">" and str[i+1]=="="):
                 cur=NewToken(TokenKind.RESERVED,cur,p+str[i+1])
                 flag=True
                 continue
