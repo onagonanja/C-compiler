@@ -14,15 +14,17 @@ with open(args[1],"r") as f:
 
 code.replace("\n","")
 
-token=tokenize(code)
-node=start()
+tokens=tokenize(code)
+trees=program()
 
 with open("output.txt","w") as f:
     f.write(".intel_syntax noprefix\n")
     f.write(".global main\n")
     f.write("main:\n")
 
-GenerateAsemmbly(node)
+for i in trees:    
+    GenerateAsemmbly(i)
+    write("  pop rax\n")
 
 with open("output.txt","a") as f:
     f.write("  ret\n")

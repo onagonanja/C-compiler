@@ -6,6 +6,8 @@ class TokenKind(Enum):
     RESERVED=1
     NUM=2
     EOF=3
+    IDENT=4
+    RETURN=5
 
 #トークンクラス
 class Token():
@@ -14,6 +16,7 @@ class Token():
         self.next=next
         self.val=val
         self.str=str
+        #print(self.str)
 
 #現在注目しているトークン
 token=Token()
@@ -23,6 +26,26 @@ def consume(symbol):
     global token
 
     if token.kind !=TokenKind.RESERVED or token.str!=symbol:
+        return False
+
+    token=token.next
+    return True
+
+#渡された記号がローカル変数かどうか判別し、トークンを1つ進める
+def consume_val():
+    global token
+
+    if token.kind !=TokenKind.IDENT:
+        return False
+    res=token.str
+    token=token.next
+    return res
+
+#returnかどうか判別し、トークンを1つ進める
+def consume_ret():
+    global token
+
+    if token.kind !=TokenKind.RETURN:
         return False
 
     token=token.next
@@ -51,6 +74,12 @@ def expectNum():
     token=token.next
     return res
 
+#プログラムの終わりかどうか判別する関数
+def at_eof():
+    global token
+    #print(token.str)
+    return token.kind==TokenKind.EOF
+
 #新たなトークンを作成する関数
 def NewToken(kind,cur,str):
     token=Token(kind=kind,str=str)
@@ -63,12 +92,24 @@ def tokenize(str):
     head=Token()
     cur=head #現在注目しているトークン
     flag=False
+    val="" #変数名
 
     for i, p in enumerate(str):
         if flag==True:
             flag=False
             continue
 
+        if p>="a" and p<="z":
+            val+=p
+            continue
+        
+        if len(val)!=0:
+            if val=="return" and p!="=":
+                cur=NewToken(TokenKind.RETURN,cur,val)
+            else:
+                cur=NewToken(TokenKind.IDENT,cur,val)
+            val=""    
+        
         if(p==" "):
             continue
 
@@ -81,6 +122,10 @@ def tokenize(str):
                 cur=NewToken(TokenKind.RESERVED,cur,p+str[i+1])
                 flag=True
                 continue
+
+        if p=="=":
+            cur=NewToken(TokenKind.RESERVED,cur,p)
+            continue
         
         if p=="<" or p==">":
             cur=NewToken(TokenKind.RESERVED,cur,p)
@@ -94,11 +139,14 @@ def tokenize(str):
             cur=NewToken(TokenKind.RESERVED,cur,p)
             continue
 
+        if p==";":
+            cur=NewToken(TokenKind.RESERVED,cur,p)
+            continue
+
         if p.isdigit():
             cur=NewToken(TokenKind.NUM,cur,p)
             cur.val=int(p)
             continue
-
         error(3)
     eof=NewToken(TokenKind.EOF,cur,"EOF")
     token=head.next

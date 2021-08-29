@@ -9,6 +9,27 @@ def GenerateAsemmbly(node):
     if node.kind==NodeKind.NUM:
         write("  push %d\n" %node.val)
         return
+    elif node.kind==NodeKind.ASSIGN:
+        GenerateLval(node.left)
+        GenerateAsemmbly(node.right)
+        write("  pop rdi\n")
+        write("  pop rax\n")
+        write("  mov [rax], rdi\n")
+        write("  push rdi\n")
+        return
+    elif node.kind==NodeKind.LVAL:
+        GenerateLval(node)
+        write("  pop rax\n")
+        write("  mov rax, [rax]\n")
+        write("  push rax\n")
+        return
+    elif node.kind==NodeKind.RET:
+        GenerateAsemmbly(node.left)
+        write("  pop rax\n")
+        write("  mov rsp, rbp\n")
+        write("  pop rbp\n")
+        write("  ret\n")
+        return
     
     GenerateAsemmbly(node.left)
     GenerateAsemmbly(node.right)
@@ -48,5 +69,13 @@ def GenerateAsemmbly(node):
         write("  cmp rdi, rax\n")
         write("  setne al\n")
         write("  movzb rax, al\n")
-    
     write("  push rax\n")
+
+
+def GenerateLval(node):
+    if node.kind!=NodeKind.LVAL:
+        error("左辺値が変数ではないのん")
+    write("  mov rax, rbp\n")
+    write("  sub rax, %d\n" %node.offset)
+    write("  push rax\n")
+    

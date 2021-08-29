@@ -14,18 +14,45 @@ class NodeKind(Enum):
     RET=9 #>=
     EQ=10 #==
     NEQ=11 #!=
+    LVAL=12 #ローカル変数
+    ASSIGN=13 #=
 
 #ノードクラス
 class Node():
-    def __init__(self,kind=None,left=None,right=None,val=None):
+    def __init__(self,kind=None,left=None,right=None,val=None,offset=0):
         self.kind=kind
         self.left=left
         self.right=right
         self.val=val
+        self.offset=offset
+        #print(self.kind)
 
-#start=equal
-def start():
+#program=stmt*
+def program():
+    code=[]
+    while not at_eof():
+        code.append(stmt())
+    return code
+
+#stmt=expr ";" |"return" expr ";"
+def stmt():
+    if consume_ret():
+        node =Node(NodeKind.RET,left=expr())
+    else:
+        node =expr()
+    expect(";")
+    return node
+
+#expr=assign
+def expr():
+    node=assign()
+    return node
+
+#assign=equal ("="assign)?
+def assign():
     node=equal()
+    if consume("="):
+        node=Node(NodeKind.ASSIGN,node,assign())
     return node
 
 #equal = (relate "=="|relate "!=")
@@ -87,9 +114,43 @@ def unary():
 #primary = num | "(" start ")"
 def primary():
     if consume('('):
-        node=start()
+        node=expr()
         expect(')')
+        return node
+
+    str=consume_val()
+    if str:
+        LVAL=FindLval(str)
+        if LVAL==None:
+            global local
+            lval=Lval(next=local,name=str,offset=local.offset+8)
+            node=Node(NodeKind.LVAL,offset=lval.offset)
+            local=lval
+        else:
+            node=Node(NodeKind.LVAL,offset=LVAL.offset)
         return node
 
     node=Node(kind=NodeKind.NUM,val=expectNum())
     return node
+
+#ローカル変数クラス
+class Lval():
+    def __init__(self,next=None,name="",offset=0):
+        self.next=next
+        self.name=name
+        self.offset=offset
+
+#ローカル変数
+local=Lval()
+
+#ローカル変数を探す関数
+def FindLval(str):
+    global local 
+    lval=local
+
+    while True:
+        if lval.name==str:
+            return lval
+        elif lval.next==None:
+            return None
+        lval=lval.next
