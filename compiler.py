@@ -12,9 +12,11 @@ if len(args)!=2:
 with open(args[1],"r") as f:
     code=f.read()
 
-code.replace("\n","")
+code=code.replace("\n","")
 
 tokens=tokenize(code)
+
+#show_tokens()
 trees=program()
 
 with open("output.txt","w") as f:

@@ -16,6 +16,10 @@ class NodeKind(Enum):
     NEQ=11 #!=
     LVAL=12 #ローカル変数
     ASSIGN=13 #=
+    BLOCK=14 #ブロック型
+    IF=15
+    ELSE=16
+    IFEL=17
 
 #ノードクラス
 class Node():
@@ -27,6 +31,28 @@ class Node():
         self.offset=offset
         #print(self.kind)
 
+#ブロック型ノードクラス
+class Node_Block():
+    def __init__(self,kind=None):
+        self.kind=kind
+        self.stmt=[]
+
+    def add(self,stmt):
+        self.stmt.append(stmt)
+
+class Node_IF():
+    def __init__(self,kind=None):
+        self.kind=kind
+    
+    def setExpr(self,expr):
+        self.expr=expr
+    
+    def setStmt(self,stmt):
+        self.stmt=stmt
+
+    def setElseStmt(self,stmt):
+        self.elstmt=stmt    
+
 #program=stmt*
 def program():
     code=[]
@@ -34,29 +60,59 @@ def program():
         code.append(stmt())
     return code
 
-#stmt=expr ";" |"return" expr ";"
+#stmt=expr ";" 
+#    |"{" stmt* "}"
+#    |"return" expr ";"
+#    |"if" "(" expr ")" stmt ("else" stmt)? 
+#    |"while" "(" expr ")" stmt
+#    |"for" "(" expr? ";" expr? ";" expr? ")" stmt
+
 def stmt():
     if consume_ret():
         node =Node(NodeKind.RET,left=expr())
+        expect(";")
+    elif consume("{"):
+        node=Node_Block(NodeKind.BLOCK)
+        while not consume("}") and not at_eof():
+            node.add(stmt())
+
+    elif consume("if"):
+        expect("(")
+        if serch_else():
+            node=Node_IF(NodeKind.IFEL)
+            node.setExpr(expr())
+            expect(")")
+            node.setStmt(stmt())
+            expect("else")
+            node.setElseStmt(stmt())
+        else:
+            node=Node_IF(NodeKind.IF)
+            node.setExpr(expr())
+            expect(")")
+            node.setStmt(stmt())
     else:
         node =expr()
-    expect(";")
+        expect(";")
     return node
 
 #expr=assign
 def expr():
+    trace("expr")
     node=assign()
     return node
 
-#assign=equal ("="assign)?
+#assign=equal ("=" assign)?
 def assign():
+    trace("assign")
     node=equal()
     if consume("="):
+        #trace("assign")
         node=Node(NodeKind.ASSIGN,node,assign())
     return node
 
 #equal = (relate "=="|relate "!=")
 def equal():
+    trace("equal")
     node=relate()
     while True:
         if consume("=="):
@@ -68,6 +124,7 @@ def equal():
 
 #relate = add ("<" add | ">" add | "<=" add | ">=" add)
 def relate():
+    trace("relate")
     node=add()
     while True:
         if consume("<"):
@@ -83,6 +140,7 @@ def relate():
 
 #add = mul ("+" mul | "-" mul)*
 def add():
+    trace("add")
     node=mul()
     while True:
         if consume("+"):
@@ -94,6 +152,7 @@ def add():
 
 #mul = unary ("*" unary | "/" unary)*
 def mul():
+    trace("mul")
     node=unary()
     while True:
         if consume("*"):
@@ -105,14 +164,16 @@ def mul():
 
 #unary = ("+" | "-")? primary
 def unary():
+    trace("unary")
     if consume('+'):
         return primary()
     if consume("-"):
         return Node(NodeKind.SUB,Node(kind=NodeKind.NUM,val=0),primary())
     return primary()
 
-#primary = num | "(" start ")"
+#primary = num | lval | "(" expr ")"
 def primary():
+    trace("prymary")
     if consume('('):
         node=expr()
         expect(')')

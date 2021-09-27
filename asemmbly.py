@@ -30,6 +30,29 @@ def GenerateAsemmbly(node):
         write("  pop rbp\n")
         write("  ret\n")
         return
+    elif node.kind==NodeKind.BLOCK:
+        for stmt in node.stmt:
+            GenerateAsemmbly(stmt)
+        return
+    elif node.kind==NodeKind.IF:
+        GenerateAsemmbly(node.expr)
+        write("  pop rax\n")
+        write("  cmp rax, 0\n")
+        write("  je  .LendXXX\n")
+        GenerateAsemmbly(node.stmt)
+        write(".LendXXX:\n")
+        return
+    elif node.kind==NodeKind.IFEL:
+        GenerateAsemmbly(node.expr)
+        write("  pop rax\n")
+        write("  cmp rax, 0\n")
+        write("  je  .LelseXXX\n")
+        GenerateAsemmbly(node.stmt)
+        write("  jmp .LendXXX\n")
+        write(".LelseXXX:\n")
+        GenerateAsemmbly(node.elstmt)
+        write(".LendXXX:\n")
+        return 
     
     GenerateAsemmbly(node.left)
     GenerateAsemmbly(node.right)
@@ -70,7 +93,6 @@ def GenerateAsemmbly(node):
         write("  setne al\n")
         write("  movzb rax, al\n")
     write("  push rax\n")
-
 
 def GenerateLval(node):
     if node.kind!=NodeKind.LVAL:

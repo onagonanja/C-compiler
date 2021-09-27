@@ -1,5 +1,6 @@
 from enum import Enum
 import sys
+import copy
 
 #トークンの種類
 class TokenKind(Enum):
@@ -8,6 +9,11 @@ class TokenKind(Enum):
     EOF=3
     IDENT=4
     RETURN=5
+    IF=6
+    WHILE=7
+    FOR=8
+    ELSE=9
+    IFEL=10
 
 #トークンクラス
 class Token():
@@ -24,11 +30,15 @@ token=Token()
 #渡された記号が期待しているものかどうか判別し、トークンを1つ進める
 def consume(symbol):
     global token
-
-    if token.kind !=TokenKind.RESERVED or token.str!=symbol:
+    if token.str!=symbol:
         return False
-
     token=token.next
+    return True
+
+def trace(symbol):
+    global token
+    if token.str=="c":
+        print(symbol)
     return True
 
 #渡された記号がローカル変数かどうか判別し、トークンを1つ進める
@@ -40,6 +50,7 @@ def consume_val():
     res=token.str
     token=token.next
     return res
+
 
 #returnかどうか判別し、トークンを1つ進める
 def consume_ret():
@@ -60,7 +71,8 @@ def error(x):
 #渡された記号が期待しているものかどうか判別し、偽のときはエラーを報告する
 def expect(symbol):
     global token
-    if token.kind !=TokenKind.RESERVED or token.str[0]!=symbol:
+    if token.str!=symbol:
+        print(token.str)
         error(0)
     token=token.next
     return True
@@ -69,6 +81,8 @@ def expect(symbol):
 def expectNum():
     global token
     if token.kind !=TokenKind.NUM:
+        print(token.next.str)
+        print(token.str)
         error(1)
     res=token.val
     token=token.next
@@ -106,6 +120,14 @@ def tokenize(str):
         if len(val)!=0:
             if val=="return" and p!="=":
                 cur=NewToken(TokenKind.RETURN,cur,val)
+            elif val=="if":
+                cur=NewToken(TokenKind.IF,cur,val)
+            elif val=="while":
+                cur==NewToken(TokenKind.WHILE,cur,val)
+            elif val=="for":
+                cur==NewToken(TokenKind.FOR,cur,val)
+            elif val=="else":
+                cur=NewToken(TokenKind.ELSE,cur,val)
             else:
                 cur=NewToken(TokenKind.IDENT,cur,val)
             val=""    
@@ -139,6 +161,10 @@ def tokenize(str):
             cur=NewToken(TokenKind.RESERVED,cur,p)
             continue
 
+        if p=="{" or p=="}":
+            cur=NewToken(TokenKind.RESERVED,cur,p)
+            continue
+
         if p==";":
             cur=NewToken(TokenKind.RESERVED,cur,p)
             continue
@@ -151,3 +177,36 @@ def tokenize(str):
     eof=NewToken(TokenKind.EOF,cur,"EOF")
     token=head.next
     return head.next
+
+def serch_else():
+    global token
+    Token=copy.deepcopy(token)
+    cnt=0
+    while not at_eof():
+        if Token.str=="{":
+            cnt+=1
+        elif Token.str=="}":
+            cnt-=1
+            if cnt<=0:
+                Token=Token.next
+                if Token.kind==TokenKind.ELSE:
+                    return True
+                else:
+                    return False
+        elif Token.kind==TokenKind.ELSE and cnt==0:
+            return True
+        
+        Token=Token.next
+    print("bbbbbbbbbbbbb")
+    return False
+
+def show_tokens():
+    global token
+    Token=copy.deepcopy(token)
+    while Token.kind!=TokenKind.EOF:
+        print(Token.str)
+        Token=Token.next
+
+def show_token():
+    global token
+    print(token.str)
