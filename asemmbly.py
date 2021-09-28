@@ -9,6 +9,8 @@ def GenerateAsemmbly(node):
     if node.kind==NodeKind.NUM:
         write("  push %d\n" %node.val)
         return
+    elif node.kind==NodeKind.NULL:
+        return
     elif node.kind==NodeKind.ASSIGN:
         GenerateLval(node.left)
         GenerateAsemmbly(node.right)
@@ -53,6 +55,27 @@ def GenerateAsemmbly(node):
         GenerateAsemmbly(node.elstmt)
         write(".LendXXX:\n")
         return 
+    elif node.kind==NodeKind.WHILE:
+        write(".LbeginXXX:\n")
+        GenerateAsemmbly(node.expr)
+        write("  pop rax\n")
+        write("  cmp rax, 0\n")
+        write("  je  .LendXXX\n")
+        GenerateAsemmbly(node.stmt)
+        write("  jmp .LbeginXXX\n")
+        write(".LendXXX:\n")
+        return
+    elif node.kind==NodeKind.FOR:
+        GenerateAsemmbly(node.Init)
+        write(".LbeginXXX:\n")
+        GenerateAsemmbly(node.Cmp)
+        write("  pop rax\n")
+        write("  cmp rax, 0\n")
+        write("  je  .LendXXX\n")
+        GenerateAsemmbly(node.Stmt)
+        GenerateAsemmbly(node.Reset)
+        write(".LendXXX:\n")
+        return
     
     GenerateAsemmbly(node.left)
     GenerateAsemmbly(node.right)
@@ -100,4 +123,3 @@ def GenerateLval(node):
     write("  mov rax, rbp\n")
     write("  sub rax, %d\n" %node.offset)
     write("  push rax\n")
-    

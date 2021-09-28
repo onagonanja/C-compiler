@@ -17,6 +17,7 @@ code=code.replace("\n","")
 tokens=tokenize(code)
 
 #show_tokens()
+#exit()
 trees=program()
 
 with open("output.txt","w") as f:

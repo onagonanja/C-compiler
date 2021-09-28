@@ -20,6 +20,9 @@ class NodeKind(Enum):
     IF=15
     ELSE=16
     IFEL=17
+    WHILE=18
+    FOR=19
+    NULL=20
 
 #ノードクラス
 class Node():
@@ -51,7 +54,33 @@ class Node_IF():
         self.stmt=stmt
 
     def setElseStmt(self,stmt):
-        self.elstmt=stmt    
+        self.elstmt=stmt
+
+class Node_While():
+    def __init__(self,kind=None):
+        self.kind=kind
+    
+    def setExpr(self,expr):
+        self.expr=expr
+    
+    def setStmt(self,stmt):
+        self.stmt=stmt
+
+class Node_For():
+    def __init__(self,kind=None):
+        self.kind=kind
+
+    def setInit(self,expr):
+        self.Init=expr
+    
+    def setCmp(self,expr):
+        self.Cmp=expr
+    
+    def setReset(self,expr):
+        self.Reset=expr
+    
+    def setStmt(self,stmt):
+        self.Stmt=stmt
 
 #program=stmt*
 def program():
@@ -60,7 +89,8 @@ def program():
         code.append(stmt())
     return code
 
-#stmt=expr ";" 
+#stmt=";"
+#    |expr ";" 
 #    |"{" stmt* "}"
 #    |"return" expr ";"
 #    |"if" "(" expr ")" stmt ("else" stmt)? 
@@ -71,6 +101,7 @@ def stmt():
     if consume_ret():
         node =Node(NodeKind.RET,left=expr())
         expect(";")
+
     elif consume("{"):
         node=Node_Block(NodeKind.BLOCK)
         while not consume("}") and not at_eof():
@@ -90,6 +121,31 @@ def stmt():
             node.setExpr(expr())
             expect(")")
             node.setStmt(stmt())
+
+    elif consume("while"):
+        expect("(")
+        node=Node_While(NodeKind.WHILE)
+        node.setExpr(expr())
+        expect(")")
+        node.setStmt(stmt())
+    
+    elif consume("for"):
+        expect("(")
+        node=Node_For(NodeKind.FOR)
+        if not consume(";"):
+            node.setInit(expr())
+            expect(";")
+        if not consume(";"):
+            node.setCmp(expr())
+            expect(";")
+        if not consume(")"):
+            node.setReset(expr())
+            expect(")")
+        node.setStmt(stmt())
+
+    elif consume(";"):
+        node=Node(NodeKind.NULL)
+
     else:
         node =expr()
         expect(";")

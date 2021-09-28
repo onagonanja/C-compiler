@@ -123,9 +123,9 @@ def tokenize(str):
             elif val=="if":
                 cur=NewToken(TokenKind.IF,cur,val)
             elif val=="while":
-                cur==NewToken(TokenKind.WHILE,cur,val)
+                cur=NewToken(TokenKind.WHILE,cur,val)
             elif val=="for":
-                cur==NewToken(TokenKind.FOR,cur,val)
+                cur=NewToken(TokenKind.FOR,cur,val)
             elif val=="else":
                 cur=NewToken(TokenKind.ELSE,cur,val)
             else:
