@@ -23,6 +23,9 @@ class NodeKind(Enum):
     WHILE=18
     FOR=19
     NULL=20
+    FUNCDEF=21
+    FUNCCALL=22
+    ARG=23
 
 #ノードクラス
 class Node():
@@ -43,6 +46,7 @@ class Node_Block():
     def add(self,stmt):
         self.stmt.append(stmt)
 
+#IF文ノードクラス
 class Node_IF():
     def __init__(self,kind=None):
         self.kind=kind
@@ -56,6 +60,7 @@ class Node_IF():
     def setElseStmt(self,stmt):
         self.elstmt=stmt
 
+#WHILE型ノードクラス
 class Node_While():
     def __init__(self,kind=None):
         self.kind=kind
@@ -66,6 +71,7 @@ class Node_While():
     def setStmt(self,stmt):
         self.stmt=stmt
 
+#FOR型ノードクラス
 class Node_For():
     def __init__(self,kind=None):
         self.kind=kind
@@ -82,12 +88,88 @@ class Node_For():
     def setStmt(self,stmt):
         self.Stmt=stmt
 
-#program=stmt*
+#ローカル変数クラス
+class Lval():
+    def __init__(self,next=None,name="",offset=0):
+        self.next=next
+        self.name=name
+        self.offset=offset
+
+#関数定義クラス
+class Node_Func():
+    def __init__(self,kind=None,name=None):
+        global local,arguments,lvalCnt
+        local=Lval()
+        arguments={}
+        lvalCnt=0
+
+        self.kind=kind
+        self.name=name
+        self.offset=8
+        self.args={}
+    
+    def addArg(self,name):
+        global local
+        self.args[name]=self.offset
+        arguments[name]=self.offset
+        self.offset+=8
+
+    def setStmt(self,stmt):
+        self.stmt=stmt
+    
+    def setLvalCnt(self,cnt):
+        self.lvalCnt=cnt
+
+#引数クラス
+class Node_Arg():
+    def __init__(self,kind,name,offset):
+        self.kind=kind
+        self.name=name
+        self.offset=offset
+
+#関数呼出しクラス
+class Node_Func_Call():
+    def __init__(self,kind,name):
+        self.kind=kind
+        self.name=name
+        self.args=[]
+    
+    def addArg(self,arg):
+        self.args.append(arg)
+    
+#program=func*
 def program():
     code=[]
     while not at_eof():
-        code.append(stmt())
+        code.append(func())
     return code
+
+#func=funcname "(" ((arg ",")* arg)? ")" stmt
+def func():
+    funcName=consume_val()
+    if not funcName:
+        error(8)
+
+    node=Node_Func(NodeKind.FUNCDEF,funcName)
+    expect("(")
+    #引数
+    while not at_eof():
+        if consume(")"):
+            break
+        if consume(","):
+            continue
+        argName=consume_val()
+        if not argName:
+            print(argName)
+            error("引数が正しくありません")
+        node.addArg(argName)
+
+    #処理内容
+    node.setStmt(stmt())
+    global lvalCnt
+    print(lvalCnt)
+    node.setLvalCnt(lvalCnt)
+    return node
 
 #stmt=";"
 #    |expr ";" 
@@ -227,7 +309,7 @@ def unary():
         return Node(NodeKind.SUB,Node(kind=NodeKind.NUM,val=0),primary())
     return primary()
 
-#primary = num | lval | "(" expr ")"
+#primary = num | lval | "(" expr ")" |func "(" ((expr ",")* expr)? ")"
 def primary():
     trace("prymary")
     if consume('('):
@@ -237,32 +319,41 @@ def primary():
 
     str=consume_val()
     if str:
-        LVAL=FindLval(str)
-        if LVAL==None:
-            global local
-            lval=Lval(next=local,name=str,offset=local.offset+8)
-            node=Node(NodeKind.LVAL,offset=lval.offset)
-            local=lval
-        else:
-            node=Node(NodeKind.LVAL,offset=LVAL.offset)
+        if consume("("): #関数の場合
+            node=Node_Func_Call(NodeKind.FUNCCALL,str)
+            while not at_eof():
+                if consume(")"):
+                    break
+
+                node.addArg(primary())
+
+                if consume(","):
+                    continue
+
+        else:   #変数または引数の場合
+            if str in arguments: #引数の場合
+                node=Node_Arg(NodeKind.ARG,str,arguments[str])
+            else:                #ローカル変数の場合
+                LVAL=FindLval(str)
+                if LVAL==None:
+                    global local,lvalCnt
+                    lval=Lval(next=local,name=str,offset=local.offset+8)
+                    node=Node(NodeKind.LVAL,offset=lval.offset)
+                    local=lval
+                    lvalCnt+=1
+                else:
+                    node=Node(NodeKind.LVAL,offset=LVAL.offset)
         return node
 
     node=Node(kind=NodeKind.NUM,val=expectNum())
     return node
-
-#ローカル変数クラス
-class Lval():
-    def __init__(self,next=None,name="",offset=0):
-        self.next=next
-        self.name=name
-        self.offset=offset
 
 #ローカル変数
 local=Lval()
 
 #ローカル変数を探す関数
 def FindLval(str):
-    global local 
+    global local
     lval=local
 
     while True:
@@ -271,3 +362,13 @@ def FindLval(str):
         elif lval.next==None:
             return None
         lval=lval.next
+
+#関数名のリスト
+funclist=[]
+
+#引数のリスト
+arguments={}
+
+#ローカル変数の数
+lvalCnt=0
+

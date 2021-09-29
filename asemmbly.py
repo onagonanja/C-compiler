@@ -17,7 +17,7 @@ def GenerateAsemmbly(node):
         write("  pop rdi\n")
         write("  pop rax\n")
         write("  mov [rax], rdi\n")
-        write("  push rdi\n")
+        #write("  push rdi\n")
         return
     elif node.kind==NodeKind.LVAL:
         GenerateLval(node)
@@ -76,7 +76,26 @@ def GenerateAsemmbly(node):
         GenerateAsemmbly(node.Reset)
         write(".LendXXX:\n")
         return
-    
+    elif node.kind==NodeKind.FUNCDEF:
+        write("_"+node.name+":\n")
+        write("  push rbp\n")
+        write("  mov rbp, rsp\n")
+        write("  sub rsp %d\n" %(node.lvalCnt*8))
+        GenerateAsemmbly(node.stmt)
+        write("\n")
+        return
+    elif node.kind==NodeKind.FUNCCALL:
+        for arg in node.args:
+            GenerateAsemmbly(arg)
+        write("  call %s\n" %node.name)
+        return
+    elif node.kind==NodeKind.ARG:
+         write("  mov rax, rbp\n")
+         write("  add rax, %d\n" %node.offset)
+         write("  mov rax, [rax]\n")
+         write("  push rax\n")
+         return
+
     GenerateAsemmbly(node.left)
     GenerateAsemmbly(node.right)
 

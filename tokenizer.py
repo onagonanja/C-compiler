@@ -14,6 +14,7 @@ class TokenKind(Enum):
     FOR=8
     ELSE=9
     IFEL=10
+    FUNC=11
 
 #トークンクラス
 class Token():
@@ -37,11 +38,11 @@ def consume(symbol):
 
 def trace(symbol):
     global token
-    if token.str=="c":
+    if token.str=="=":
         print(symbol)
     return True
 
-#渡された記号がローカル変数かどうか判別し、トークンを1つ進める
+#現在注目しているトークンが変数名または関数名かどうか判別し、真ならトークンを1つ進める
 def consume_val():
     global token
 
@@ -81,9 +82,9 @@ def expect(symbol):
 def expectNum():
     global token
     if token.kind !=TokenKind.NUM:
-        print(token.next.str)
+        print(token.kind)
         print(token.str)
-        error(1)
+        error(1000000)
     res=token.val
     token=token.next
     return res
@@ -165,7 +166,7 @@ def tokenize(str):
             cur=NewToken(TokenKind.RESERVED,cur,p)
             continue
 
-        if p==";":
+        if p==";" or p==",":
             cur=NewToken(TokenKind.RESERVED,cur,p)
             continue
 
@@ -197,7 +198,6 @@ def serch_else():
             return True
         
         Token=Token.next
-    print("bbbbbbbbbbbbb")
     return False
 
 def show_tokens():
@@ -205,6 +205,7 @@ def show_tokens():
     Token=copy.deepcopy(token)
     while Token.kind!=TokenKind.EOF:
         print(Token.str)
+        print(Token.kind)
         Token=Token.next
 
 def show_token():

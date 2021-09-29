@@ -23,12 +23,11 @@ trees=program()
 with open("output.txt","w") as f:
     f.write(".intel_syntax noprefix\n")
     f.write(".global main\n")
-    f.write("main:\n")
+    f.write("\n")
 
-for i in trees:    
+for i in trees:
     GenerateAsemmbly(i)
-    write("  pop rax\n")
 
-with open("output.txt","a") as f:
-    f.write("  ret\n")
+#with open("output.txt","a") as f:
+    
 
