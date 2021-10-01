@@ -4,3 +4,5 @@ test.py
 output.s
 a.exe
 __pycache__/
+test.exe
+test/
